@@ -92,7 +92,9 @@ l'administration, il suit l'entrée à laquelle il est attaché.
 
 ## Comment cette version a été vérifiée
 
-Le site statique avait déjà passé sa propre suite (1354 contrôles). La question
+Le site statique avait déjà passé sa propre suite (1354 contrôles, mesurés à la
+livraison de la version statique le 2 septembre 2026 ; non rejoués ici — le site
+statique n'a pas changé depuis, il sert de référence). La question
 n'était donc pas « est-ce que le site est bon » mais « est-ce que WordPress rend
 **exactement** la même chose ». Trois contrôles, dans cet ordre :
 
