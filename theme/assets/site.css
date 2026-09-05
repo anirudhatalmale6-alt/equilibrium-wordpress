@@ -1,0 +1,544 @@
+/* Equilibrium — feuille de style unique.
+
+   Direction donnee par le client, mot pour mot : « sur fond noir et touche de
+   diamant ». Le mot qui compte est TOUCHE. Le piege d'une commande pareille
+   est de mettre du brillant partout ; un fond noir sature de reflets ne dit
+   pas « pierre precieuse », il dit « casino ». L'accent est donc rationne :
+   le sigle, le filet au-dessus des titres, la puce des sur-titres, les cinq
+   gemmes, et rien d'autre. Le reste est du noir, du blanc casse et un gris.
+
+   Aucune police distante, aucun script tiers, aucune requete sortante. Un
+   site politique qui charge une police depuis un serveur tiers communique
+   l'adresse IP de chacun de ses lecteurs a ce tiers. Ce n'est pas acceptable
+   ici, et cela coute zero de l'eviter. */
+
+:root{
+  --bg:#07080A;
+  --bg2:#0C0E11;
+  --bg3:#111419;
+  --line:rgba(255,255,255,.11);
+  --line-fort:rgba(255,255,255,.2);
+  --txt:#E9ECF0;
+  --mut:#99A2AD;
+  --ice:#A9D8EF;
+  --ice-fonce:#5E8DA6;
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --wrap:1120px;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--txt);
+  font:400 16.5px/1.72 var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%; display:block}
+a{color:inherit}
+.wrap{width:100%; max-width:var(--wrap); margin:0 auto; padding:0 24px}
+
+/* ---- bandeau de demonstration ------------------------------------------
+   Present sur toutes les pages tant que le mouvement n'a pas valide le
+   contenu. Il part en supprimant une constante dans build.py. */
+.demo{
+  background:#1A1206; color:#F0D9AF; border-bottom:1px solid rgba(240,217,175,.22);
+  font:600 12.5px/1.5 var(--sans); letter-spacing:.02em; text-align:center;
+  padding:9px 18px;
+}
+
+/* ---- en-tete ------------------------------------------------------------ */
+.hdr{
+  position:sticky; top:0; z-index:40;
+  background:rgba(7,8,10,.90); backdrop-filter:saturate(140%) blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.hdr .wrap{display:flex; align-items:center; justify-content:space-between;
+           gap:18px; min-height:70px; padding-top:10px; padding-bottom:10px;
+           /* L'en-tete porte sept libelles plus une porte : il a droit a plus
+              de largeur que le corps du texte, qui lui reste a 1120 px pour
+              rester lisible. */
+           max-width:1240px}
+/* Le menu est passe de quatre libelles a sept plus un bouton. Sans cette
+   ligne, le nom de marque — qui est un element flex comme les autres — se
+   faisait comprimer par la navigation et rendait « Equilibriu ». Constate a
+   SIX largeurs entre 768 et 1440 px par le controle de rognage, pas a l'oeil :
+   le mot etait coupe d'une lettre, ce qui se lit comme une largeur choisie. */
+.brand{display:flex; align-items:center; gap:11px; text-decoration:none; flex:0 0 auto}
+.brand .nm{white-space:nowrap}
+.brand img{width:26px; height:26px}
+.brand .nm{
+  font:600 19px/1 var(--serif); letter-spacing:.12em; text-transform:uppercase;
+}
+.nav{display:flex; align-items:center; gap:20px; row-gap:8px; flex-wrap:wrap;
+     flex:1 1 auto; justify-content:flex-end}
+.nav a{
+  text-decoration:none; color:var(--mut);
+  font:600 12.6px/1 var(--sans); letter-spacing:.13em; text-transform:uppercase;
+  padding:7px 0; border-bottom:1px solid transparent;
+}
+.nav a:hover{color:var(--txt)}
+.nav a[aria-current="page"]{color:var(--ice); border-bottom-color:var(--ice)}
+
+/* ---- hero --------------------------------------------------------------- */
+.hero{
+  position:relative; background:var(--bg) url("hero.svg") right center/cover no-repeat;
+  border-bottom:1px solid var(--line);
+}
+/* Le voile du hero est peint DEUX fois, et ce n'est pas une redondance.
+
+   Celui qui est grave dans hero.svg est horizontal et calibre pour le format
+   de l'image. Des que la fenetre devient plus etroite que l'image, `cover`
+   agrandit le SVG et rogne ses cotes : sur un telephone, la partie sombre de
+   gauche sort du cadre et il ne reste que la pierre, en plein sous le titre.
+   Constate sur la capture a 390 px — titre blanc sur facettes claires,
+   illisible — et corrige ici, dans une regle qui, elle, connait la largeur
+   reelle de la fenetre.
+
+   Le voile CSS est donc inactif au-dessus de 1000 px, ou le voile grave suffit
+   et ou l'ecraser assombrirait la pierre pour rien. La lisibilite du titre est
+   MESUREE aux quatorze largeurs dans tests/verif.py : on cache le texte, on
+   photographie le fond qui etait derriere, et on calcule le contraste sur le
+   pixel le plus clair. Un titre juge a l'oeil sur un seul ecran est un titre
+   illisible sur les autres. */
+.hero::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  /* La rampe s'eteint a 76 % et non a 100 % : le titre s'arrete a 52 % de la
+     largeur, et prolonger le voile jusqu'au bord droit ne protege plus rien —
+     cela ne fait qu'eteindre la pierre la ou il n'y a aucun texte a lire. */
+  background:linear-gradient(100deg,
+    rgba(7,8,10,.97) 0%, rgba(7,8,10,.94) 42%, rgba(7,8,10,.70) 54%,
+    rgba(7,8,10,.18) 66%, rgba(7,8,10,0) 76%);
+}
+.hero .wrap{position:relative; z-index:1; padding-top:96px; padding-bottom:96px}
+/* La borne de ce media query a d'abord ete fixee a 1000 px « parce que c'est
+   la que ca doit casser ». La mesure a repondu 2,56:1 A 1024 px : le rognage
+   avait deja mange la partie sombre, et ma borne etait a cote. Le voile est
+   donc peint a TOUTES les largeurs, et renforce ici. Une borne choisie a
+   l'estime est une borne fausse. */
+@media (max-width:1000px){
+  .hero::before{
+    background:linear-gradient(104deg,
+      rgba(7,8,10,.97) 0%, rgba(7,8,10,.94) 48%, rgba(7,8,10,.78) 78%, rgba(7,8,10,.62) 100%);
+  }
+}
+.hero .in{max-width:660px}
+.hero h1{
+  font:400 clamp(38px,6.2vw,66px)/1.08 var(--serif);
+  letter-spacing:.01em; margin:20px 0 0;
+}
+.hero h1 .di{color:var(--ice)}
+.hero .sub{
+  margin:24px 0 0; max-width:560px; color:var(--txt);
+  font:400 clamp(16.5px,2vw,19.5px)/1.62 var(--sans);
+}
+
+/* Le sur-titre est pose sur une image. Sur les autres sites que j'ai livres a
+   ce client, un sur-titre dore sur un ciel pale mesurait 1,01:1 — illisible,
+   et illisible depuis le premier jour sans que personne le voie. Ici il est
+   pose sur une pastille opaque, et le contraste est MESURE page par page dans
+   tests/verif.py plutot que juge a l'oeil. */
+.eyebrow{
+  display:inline-flex; align-items:center; gap:9px;
+  font:700 11.6px/1 var(--sans); letter-spacing:.19em; text-transform:uppercase;
+  color:var(--ice); background:rgba(7,8,10,.86);
+  border:1px solid rgba(169,216,239,.26); border-radius:2px;
+  padding:8px 12px;
+}
+.eyebrow::before{
+  content:""; width:7px; height:7px; background:var(--ice);
+  transform:rotate(45deg); flex:0 0 7px;
+}
+
+/* ---- sections ----------------------------------------------------------- */
+/* L'en-tete est collant. Sans marge de defilement, un lien d'ancre depose sa
+   cible SOUS l'en-tete : le titre de la section visee est cache, et le
+   visiteur croit avoir atterri au mauvais endroit. Sur un telephone
+   l'en-tete fait pres du double de sa hauteur de bureau — la marge suit. */
+[id]{scroll-margin-top:96px}
+section{padding:84px 0; border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+.sec-h{max-width:720px}
+.sec-h h2{
+  font:400 clamp(27px,3.6vw,38px)/1.2 var(--serif); margin:20px 0 0; letter-spacing:.01em;
+}
+.sec-h p{color:var(--mut); margin:16px 0 0; font-size:17px}
+.filet{
+  height:1px; width:120px; margin:0 0 4px;
+  background:linear-gradient(90deg,var(--ice),rgba(169,216,239,0));
+}
+
+/* ---- la declaration -----------------------------------------------------
+   Sa parole, citee. Elle est typographiee autrement que tout le reste du
+   site — serif, plus grand, filet vertical — pour qu'un lecteur distingue au
+   premier coup d'oeil ce que le mouvement a ecrit de ce qu'un redacteur en a
+   tire. C'est une regle de fond, pas un effet. */
+.decl{
+  border-left:2px solid var(--ice); padding:6px 0 6px 30px; max-width:760px;
+  margin:34px 0 0;
+}
+.decl p{
+  font:400 clamp(17.5px,2.3vw,21px)/1.66 var(--serif); color:#F2F5F8; margin:0 0 22px;
+}
+.decl p:last-child{margin-bottom:0}
+.attr{
+  margin-top:26px; color:var(--mut); font-size:13.6px; letter-spacing:.03em;
+}
+
+/* ---- grilles et cartes -------------------------------------------------- */
+.grid{display:grid; gap:20px; margin-top:44px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.card{
+  background:var(--bg2); border:1px solid var(--line); border-radius:3px;
+  padding:26px 24px; position:relative;
+}
+/* la touche de diamant : une facette coupee dans l'angle, pas un reflet */
+.card::after{
+  content:""; position:absolute; top:0; right:0; width:16px; height:16px;
+  background:linear-gradient(225deg,rgba(169,216,239,.30),transparent 62%);
+}
+.card h3{font:600 17px/1.35 var(--sans); margin:0 0 10px; letter-spacing:.005em}
+.card p{margin:0; color:var(--mut); font-size:15.4px}
+.card p + p{margin-top:12px}
+
+/* ---- principes ---------------------------------------------------------- */
+.pr{
+  display:grid; grid-template-columns:170px 1fr; gap:38px; align-items:start;
+  padding:52px 0; border-top:1px solid var(--line);
+}
+.pr:first-of-type{border-top:0; padding-top:12px}
+.pr .gem{width:170px}
+.pr .num{
+  font:700 12px/1 var(--sans); letter-spacing:.2em; color:var(--ice-fonce);
+  margin:16px 0 0; text-align:center;
+}
+.pr h3{font:400 clamp(24px,3vw,31px)/1.22 var(--serif); margin:0}
+.pr .cite{
+  margin:16px 0 0; padding-left:18px; border-left:2px solid var(--ice-fonce);
+  font:400 17.5px/1.6 var(--serif); color:#F2F5F8;
+}
+.deux{display:grid; grid-template-columns:repeat(2,1fr); gap:26px; margin-top:30px}
+.deux h4{
+  font:700 11.6px/1 var(--sans); letter-spacing:.17em; text-transform:uppercase;
+  margin:0 0 14px; color:var(--ice);
+}
+.deux .non h4{color:#E7B98C}
+.deux ul{margin:0; padding:0; list-style:none}
+.deux li{color:var(--mut); font-size:15.4px; margin:0 0 14px; padding-left:18px; position:relative}
+.deux li::before{
+  content:""; position:absolute; left:0; top:9px; width:6px; height:6px;
+  background:var(--ice-fonce); transform:rotate(45deg);
+}
+.deux .non li::before{background:#8A6440}
+.deux li:last-child{margin-bottom:0}
+
+/* ---- pastille « a decider » --------------------------------------------
+   Troisieme vocabulaire du blanc delibere que j'emploie pour ce client, et il
+   ne doit pas ressembler aux deux autres : « a verifier » (une valeur existe,
+   personne ne l'a controlee) et « a definir » (une decision commerciale non
+   prise). Ici la decision est politique ou juridique et n'appartient qu'au
+   fondateur. */
+.tbd{
+  display:inline-block; font:700 11px/1 var(--sans); letter-spacing:.15em;
+  text-transform:uppercase; color:#E7B98C; background:#1E1509;
+  border:1px solid rgba(231,185,140,.3); border-radius:2px; padding:6px 9px;
+  white-space:nowrap;
+}
+
+/* ---- tableau ------------------------------------------------------------ */
+.tbl{width:100%; border-collapse:collapse; margin-top:36px; font-size:15.4px}
+.tbl th{
+  text-align:left; font:700 11.4px/1 var(--sans); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--mut); padding:0 16px 14px 0;
+  border-bottom:1px solid var(--line-fort);
+}
+.tbl td{padding:18px 16px 18px 0; border-bottom:1px solid var(--line); vertical-align:top}
+.tbl td:first-child{color:var(--txt); font-weight:600; width:24%}
+.tbl td:last-child{width:1%; padding-right:0}
+.tbl .why{color:var(--mut)}
+
+/* ---- multipolaire ------------------------------------------------------- */
+.figure{margin-top:44px; border:1px solid var(--line); border-radius:3px; background:#050607}
+/* `height:auto` n'est pas cosmetique ici. L'attribut height du gabarit fixe la
+   hauteur de la boite ; sans cette ligne, `width:100%` ne change QUE la
+   largeur, et le SVG — qui a un viewBox — se centre dans une boite trop haute
+   au lieu de la remplir. Il n'est pas deforme, il est encadre de vide, ce qui
+   ressemble a une figure mal composee plutot qu'a un defaut de CSS. Les deux
+   figures du site etaient dans ce cas. Trouve en comparant la boite RENDUE au
+   rapport naturel de l'image, pas en la regardant. */
+.figure img{width:100%; height:auto}
+.figure figcaption{
+  color:var(--mut); font-size:14px; padding:16px 20px 20px; border-top:1px solid var(--line);
+}
+
+/* ---- questions ---------------------------------------------------------- */
+.qa{border-top:1px solid var(--line); margin-top:40px}
+.qa details{border-bottom:1px solid var(--line)}
+.qa summary{
+  cursor:pointer; list-style:none; padding:21px 40px 21px 0; position:relative;
+  font:600 16.5px/1.45 var(--sans);
+}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::after{
+  content:""; position:absolute; right:6px; top:27px; width:9px; height:9px;
+  border-right:1.6px solid var(--ice); border-bottom:1.6px solid var(--ice);
+  transform:rotate(45deg); transition:transform .18s ease;
+}
+.qa details[open] summary::after{transform:rotate(-135deg); top:31px}
+.qa .rep{color:var(--mut); padding:0 40px 24px 0; margin:0; font-size:15.6px}
+
+/* ---- formulaire --------------------------------------------------------- */
+.form{max-width:620px; margin-top:36px}
+.champ{margin-bottom:20px}
+.champ label{
+  display:block; font:700 11.4px/1 var(--sans); letter-spacing:.15em;
+  text-transform:uppercase; color:var(--mut); margin-bottom:9px;
+}
+.champ input,.champ select,.champ textarea{
+  width:100%; background:var(--bg2); color:var(--txt);
+  border:1px solid var(--line-fort); border-radius:2px; padding:13px 14px;
+  font:400 16px/1.5 var(--sans);
+}
+.champ input:focus,.champ select:focus,.champ textarea:focus{
+  outline:none; border-color:var(--ice); box-shadow:0 0 0 3px rgba(169,216,239,.12);
+}
+.btn{
+  display:inline-block; border:1px solid var(--ice); background:transparent;
+  color:var(--ice); font:700 12.4px/1 var(--sans); letter-spacing:.16em;
+  text-transform:uppercase; padding:16px 30px; border-radius:2px; cursor:pointer;
+  text-decoration:none;
+}
+.btn:hover{background:rgba(169,216,239,.10)}
+.btn-plein{background:var(--ice); color:#07080A}
+.btn-plein:hover{background:#C4E4F5}
+.actions{display:flex; gap:14px; flex-wrap:wrap; margin-top:34px}
+
+/* ---- avertissement ------------------------------------------------------
+   Encadre d'avertissement. Employe pour ce que le client doit savoir avant de
+   mettre le site en ligne, et pour ce qu'un visiteur doit savoir avant de
+   taper son nom dans un formulaire. */
+.avert{
+  border:1px solid rgba(231,185,140,.3); background:#14100A; border-radius:3px;
+  padding:24px 26px; margin-top:34px;
+}
+.avert h4{
+  font:700 11.8px/1 var(--sans); letter-spacing:.17em; text-transform:uppercase;
+  color:#E7B98C; margin:0 0 14px;
+}
+.avert p{margin:0 0 12px; color:#CDBFA9; font-size:15.4px}
+.avert p:last-child{margin-bottom:0}
+.avert b{color:#F0D9AF}
+
+/* ---- pied --------------------------------------------------------------- */
+.ft{background:#050607; border-top:1px solid var(--line); padding:56px 0 44px}
+.ft .haut{display:flex; justify-content:space-between; gap:40px; flex-wrap:wrap}
+.ft .brand{margin-bottom:14px}
+.ft .ligne{color:var(--mut); font-size:14.6px; max-width:420px}
+.ft nav{display:flex; gap:30px; flex-wrap:wrap}
+.ft nav a{
+  color:var(--mut); text-decoration:none; font:600 12.4px/1 var(--sans);
+  letter-spacing:.13em; text-transform:uppercase;
+}
+.ft nav a:hover{color:var(--ice)}
+.ft .bas{
+  margin-top:44px; padding-top:24px; border-top:1px solid var(--line);
+  color:#6E7681; font-size:13.4px;
+}
+
+/* ==== LA PRATIQUE, LE CERCLE ET LE PORTAIL ==============================
+   Ajoute quand le client a etendu le projet : services diplomatiques,
+   lobbying, adhesion « Equilibrium Circle » et portail membre. Meme palette,
+   meme rationnement de l'accent : rien de nouveau n'est introduit ici, tout
+   est une recomposition des elements deja valides. */
+
+/* ---- bandeau de page interne -------------------------------------------
+   Le hero de l'accueil porte une pierre, ce bandeau en porte deux. Le voile
+   est peint a TOUTES les largeurs des la premiere version, et non a partir
+   d'une borne choisie a l'estime : sur le hero, une borne posee a 1000 px
+   « parce que c'est la que ca casse » a laisse le titre a 2,56:1 A 1024 px.
+   Le contraste de ce bandeau est mesure aux quatorze largeurs, comme
+   l'autre. */
+.band{
+  position:relative;
+  background:var(--bg) url("hero-practice.svg") right center/cover no-repeat;
+  border-bottom:1px solid var(--line);
+}
+.band::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(100deg,
+    rgba(7,8,10,.97) 0%, rgba(7,8,10,.95) 46%, rgba(7,8,10,.76) 58%,
+    rgba(7,8,10,.24) 70%, rgba(7,8,10,0) 80%);
+}
+@media (max-width:1000px){
+  .band::before{
+    background:linear-gradient(104deg,
+      rgba(7,8,10,.97) 0%, rgba(7,8,10,.95) 50%, rgba(7,8,10,.84) 78%, rgba(7,8,10,.70) 100%);
+  }
+}
+.band .wrap{position:relative; z-index:1; padding-top:64px; padding-bottom:64px}
+.band .in{max-width:680px}
+.band h1{
+  font:400 clamp(30px,4.7vw,46px)/1.15 var(--serif); margin:18px 0 0; letter-spacing:.01em;
+}
+.band h1 .di{color:var(--ice)}
+.band .sub{
+  margin:18px 0 0; max-width:620px; color:var(--txt);
+  font:400 clamp(16px,1.9vw,18.5px)/1.62 var(--sans);
+}
+
+/* ---- en-tete : separateur de groupes et bouton membre -------------------
+   Les libelles sont separes en deux groupes par un filet, parce que c'est la
+   distinction que tout le site defend : le mouvement d'un cote, la pratique
+   de l'autre. Un menu qui les melange dirait le contraire du texte. */
+.nav .sep{
+  width:1px; height:15px; background:var(--line-fort); flex:0 0 1px;
+}
+.signin{
+  flex:0 0 auto;
+  text-decoration:none; color:var(--ice); border:1px solid rgba(169,216,239,.42);
+  border-radius:2px; padding:9px 14px; white-space:nowrap;
+  font:700 11.6px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+}
+.signin:hover{background:rgba(169,216,239,.10)}
+
+/* ---- lignes de service -------------------------------------------------- */
+.svc{
+  display:grid; grid-template-columns:250px 1fr; gap:38px; align-items:start;
+  padding:46px 0; border-top:1px solid var(--line);
+}
+.svc:first-of-type{border-top:0; padding-top:14px}
+.svc .n{
+  font:700 12px/1 var(--sans); letter-spacing:.2em; color:var(--ice-fonce); margin:0 0 12px;
+}
+.svc h3{font:400 clamp(22px,2.7vw,28px)/1.24 var(--serif); margin:0}
+.svc p{margin:0 0 14px; color:var(--mut); font-size:15.6px}
+.svc p:last-of-type{margin-bottom:0}
+.deliv{margin:22px 0 0; padding:18px 0 0; border-top:1px solid var(--line); list-style:none}
+.deliv h4{
+  font:700 11.4px/1 var(--sans); letter-spacing:.17em; text-transform:uppercase;
+  color:var(--ice); margin:0 0 12px;
+}
+.deliv li{color:var(--mut); font-size:15px; margin:0 0 9px; padding-left:18px; position:relative}
+.deliv li::before{
+  content:""; position:absolute; left:0; top:8px; width:6px; height:6px;
+  background:var(--ice-fonce); transform:rotate(45deg);
+}
+.deliv li:last-child{margin-bottom:0}
+
+/* ---- refus -------------------------------------------------------------
+   La liste des refus du cabinet. Elle est en ambre et non en bleu glace :
+   c'est le meme code que la pastille « a decider » et que l'encadre
+   d'avertissement — dans ce site, l'ambre signale toujours une limite ou une
+   chose non tranchee, jamais un ornement. */
+.refus{margin:34px 0 0; padding:0; list-style:none; counter-reset:r}
+.refus li{
+  counter-increment:r; position:relative; padding:18px 0 18px 46px;
+  border-bottom:1px solid var(--line); color:#CDBFA9; font-size:15.6px;
+}
+.refus li:first-child{border-top:1px solid var(--line)}
+.refus li::before{
+  content:counter(r,decimal-leading-zero); position:absolute; left:0; top:19px;
+  font:700 12px/1 var(--sans); letter-spacing:.12em; color:#E7B98C;
+}
+
+/* ---- la muraille -------------------------------------------------------- */
+.mur{margin-top:40px}
+.mur .card{background:var(--bg2)}
+.mur .card h3{color:var(--txt)}
+
+/* ---- activites du Cercle ------------------------------------------------ */
+.acts .card{display:flex; flex-direction:column}
+.acts .card p{flex:1 1 auto}
+.acts .st{margin-top:16px}
+.sceau{width:110px; height:110px; margin:0 0 22px}
+
+/* ---- portail ------------------------------------------------------------ */
+.portal{max-width:430px; margin:0; }
+.portal .form{margin-top:0}
+.portal .btn{width:100%; text-align:center}
+.duo{display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start; margin-top:38px}
+
+/* ---- apercu de l'espace membre -----------------------------------------
+   Un apercu STATIQUE, sans authentification et sans donnee. Il montre la
+   disposition, pas un contenu : chaque element porte son etat reel, qui est
+   « rien n'est encore programme ». Remplir cet ecran de fausses entrees
+   donnerait une belle capture et un mensonge. */
+.parea{display:grid; grid-template-columns:220px 1fr; gap:30px; margin-top:36px; align-items:start}
+.parea aside{border:1px solid var(--line); border-radius:3px; background:var(--bg2); padding:18px}
+.parea aside .who{
+  border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:12px;
+}
+.parea aside .who b{display:block; font:600 15px/1.3 var(--sans)}
+.parea aside .who span{color:var(--mut); font-size:13px}
+.parea aside a{
+  display:block; text-decoration:none; color:var(--mut); padding:9px 0;
+  font:600 12.4px/1 var(--sans); letter-spacing:.1em; text-transform:uppercase;
+}
+.parea aside a[aria-current]{color:var(--ice)}
+.feed{border:1px solid var(--line); border-radius:3px; background:var(--bg2)}
+.feed .it{padding:20px 22px; border-bottom:1px solid var(--line)}
+.feed .it:last-child{border-bottom:0}
+.feed .it h4{font:600 16px/1.35 var(--sans); margin:0 0 8px}
+.feed .it p{margin:0 0 12px; color:var(--mut); font-size:15px}
+.feed .vide{
+  padding:30px 22px; color:var(--mut); font-size:15px; border-bottom:1px solid var(--line);
+}
+
+/* ---- groupes du tableau des decisions ----------------------------------
+   Vingt-deux lignes a plat se lisent comme une liste de courses. En trois
+   groupes, elles se lisent comme trois chantiers. */
+.tbl tr.grp td{
+  padding:30px 0 10px; border-bottom:1px solid var(--line-fort);
+  font:700 11.4px/1 var(--sans); letter-spacing:.18em; text-transform:uppercase;
+  color:var(--ice); width:auto;
+}
+.tbl tr.grp:first-child td{padding-top:6px}
+
+/* ---- responsive ---------------------------------------------------------
+   Toujours pas de menu hamburger, mais le menu compte desormais sept
+   libelles au lieu de quatre : il passe sur deux ou trois lignes sur un
+   telephone, ce qui est visible, previsible et sans etat a tester. Un menu
+   replie sans JavaScript existe (details/summary) mais cache la navigation a
+   la mesure autant qu'au visiteur. */
+@media (max-width:920px){
+  .g4{grid-template-columns:repeat(2,1fr)}
+  .pr{grid-template-columns:120px 1fr; gap:26px}
+  .pr .gem{width:120px}
+  .svc{grid-template-columns:180px 1fr; gap:26px}
+  .duo{grid-template-columns:1fr; gap:30px}
+}
+@media (max-width:760px){
+  .hdr .wrap{flex-direction:column; align-items:flex-start; gap:2px; padding-top:12px; padding-bottom:12px}
+  .nav{gap:16px; padding-bottom:4px; justify-content:flex-start}
+  .nav a{font-size:11.6px; letter-spacing:.1em}
+  .nav .sep{display:none}
+  .signin{padding:8px 12px; font-size:11px; margin:4px 0 6px}
+  .g2,.g3{grid-template-columns:1fr}
+  .deux{grid-template-columns:1fr; gap:22px}
+  section{padding:60px 0}
+  .hero .wrap{padding-top:68px; padding-bottom:68px}
+  .band .wrap{padding-top:52px; padding-bottom:52px}
+  [id]{scroll-margin-top:170px}
+  .tbl td:first-child{width:36%}
+  .svc{grid-template-columns:1fr; gap:16px}
+  .parea{grid-template-columns:1fr; gap:20px}
+}
+@media (max-width:560px){
+  .g4{grid-template-columns:1fr}
+  .pr{grid-template-columns:1fr; gap:20px}
+  .pr .gem{width:104px}
+  .pr .num{text-align:left}
+  .decl{padding-left:20px}
+  .wrap{padding:0 18px}
+  /* Le tableau des decisions passe en fiches empilees : a 320 px, trois
+     colonnes dont une de texte long donnent des mots coupes lettre par
+     lettre. */
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block; width:auto}
+  .tbl thead{display:none}
+  .tbl tr{border-bottom:1px solid var(--line); padding:20px 0}
+  .tbl td{border:0; padding:0 0 8px}
+  .tbl td:first-child{width:auto}
+  .tbl td:last-child{width:auto; padding-bottom:0}
+}

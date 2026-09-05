@@ -1,0 +1,8 @@
+*.wpress
+admin-password.txt
+database.sql
+paquet/
+restauration/
+captures/
+wp/
+*.log
