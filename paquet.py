@@ -29,7 +29,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 WP = os.path.join(ICI, "wp")
 PAQUET = os.path.join(ICI, "paquet")
 THEME = os.path.join(WP, "wp-content", "themes", "equilibrium")
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 ARCHIVE = os.path.join(ICI, "equilibrium-%s.wpress" % VERSION)
 URL_DEV = "http://127.0.0.1:8881"
 
@@ -137,8 +137,14 @@ def main():
         json.dump(paquet_json, f)
 
     print("--- archive ---")
+    # package.json D'ABORD, et ce n'est pas une question de gout. All-in-One WP
+    # Migration valide un fichier televerse en lisant UNIQUEMENT le premier
+    # en-tete de 4377 octets et en exigeant d'y trouver ce nom exact
+    # (functions.php, ai1wm_is_filedata_supported). Avec database.sql en tete,
+    # l'import s'arrete sur « Invalid file data » sans meme regarder le reste :
+    # archive parfaite, porte fermee.
     n = ecrire_archive(ARCHIVE, contenu,
-                       [sql, os.path.join(PAQUET, "package.json")])
+                       [os.path.join(PAQUET, "package.json"), sql])
     print("  %s" % ARCHIVE)
     print("  %d entrees, %d octets" % (n, os.path.getsize(ARCHIVE)))
 
@@ -174,6 +180,17 @@ def main():
         print("  ECHEC : rangement inattendu : %s" % sorted(prefixes))
         return 1
     print("  rangement : racine = wp-content (%d prefixes)" % len(prefixes))
+
+    # La porte d'entree du plugin, relue depuis l'archive ecrite. La regle est
+    # enoncee ici telle que le plugin l'applique, et pas deduite de la facon
+    # dont ce script range les entrees : c'est tout l'interet du controle.
+    with open(ARCHIVE, "rb") as f:
+        premier = f.read(255).rstrip(b"\x00").decode("utf-8")
+    if premier != "package.json":
+        print("  ECHEC : premiere entree = %r, All-in-One WP Migration exige "
+              "package.json et refusera l'archive" % premier)
+        return 1
+    print("  premiere entree : package.json (ce que le plugin verifie)")
     return 0
 
 

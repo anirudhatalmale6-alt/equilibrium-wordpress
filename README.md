@@ -7,7 +7,7 @@ C'est le **même site** que la version statique déjà livrée : mêmes 9 pages,
 même texte, même mise en page, mêmes couleurs. La seule différence est qu'il
 est désormais administrable.
 
-**Fichier à installer : `equilibrium-1.0.0.wpress` (401 Ko).**
+**Fichier à installer : `equilibrium-1.0.1.wpress` (401 Ko).**
 
 L'archive elle-même n'est pas dans ce dépôt : elle contient la base du site,
 donc le compte d'administration et l'empreinte de son mot de passe. Elle est
@@ -33,7 +33,7 @@ et **jamais** par-dessus un site qui contient déjà quoi que ce soit.
 
 1. Sur le WordPress cible, installer l'extension **All-in-One WP Migration**.
 2. `All-in-One WP Migration` → `Import` → `Import From` → `File`, puis choisir
-   `equilibrium-1.0.0.wpress`.
+   `equilibrium-1.0.1.wpress`.
 3. Confirmer l'écrasement quand l'extension le demande.
 4. À la fin, l'extension demande d'enregistrer deux fois les permaliens :
    `Réglages` → `Permaliens` → `Enregistrer`. C'est ce qui remet les adresses
@@ -168,3 +168,43 @@ main : relancer `build_theme.py`, puis `seed.php`.
 Les 22 décisions de la page `The movement` sont toujours ouvertes, et deux
 d'entre elles bloquent tout le reste : **une personne morale ou deux ?** et
 **quel pays ?** Aucune ne peut être tranchée par un site.
+
+## 1.0.1 — pourquoi l'archive 1.0.0 était refusée à l'import
+
+L'import de la 1.0.0 s'arrêtait sur :
+
+> Invalid file data. Please ensure your file is a `.wpress` backup created with
+> All-in-One WP Migration
+
+Le contenu de l'archive était bon ; c'était l'**ordre des entrées** qui ne
+l'était pas. All-in-One WP Migration valide un fichier téléversé en lisant
+uniquement le **premier en-tête de 4377 octets** et en exigeant d'y trouver le
+nom `package.json` :
+
+```php
+// all-in-one-wp-migration/functions.php — ai1wm_is_filedata_supported()
+if ( AI1WM_PACKAGE_NAME === trim( $file_data['filename'] ) ) {
+    return true;
+}
+```
+
+La 1.0.0 avait `database.sql` en première entrée : le plugin refusait le fichier
+sans jamais regarder le reste. Trois archives exportées par le plugin lui-même
+(influus, revmetal, renosly) ont servi de témoin : dans les trois,
+`package.json` est bien l'entrée n° 0.
+
+La 1.0.1 contient **exactement les mêmes octets**, réordonnés : 26 entrées,
+292 233 octets de contenu, même taille de fichier. Elle n'a pas été reconstruite
+— `reordonne.py` recopie les entrées existantes sans les réinterpréter, pour ne
+pas refaire passer le contenu déjà vérifié par la case départ.
+
+Vérifications faites avant l'envoi, avec le code de ServMask et non le mien :
+
+- `ai1wm_is_filedata_supported()` exécutée telle quelle : 1.0.0 **refusée**,
+  1.0.1 **acceptée**, une archive du plugin acceptée (témoin) ;
+- `Ai1wm_Extractor`, le vrai lecteur du plugin, déroule la 1.0.1 en entier :
+  26 entrées, 292 233 octets, et les fichiers extraits sont identiques octet
+  pour octet au thème et au dump d'origine.
+
+`paquet.py` écrit désormais `package.json` en tête et relit l'archive pour le
+vérifier ; le contrôle a été essayé sur la 1.0.0, où il échoue bien.
