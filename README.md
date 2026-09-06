@@ -208,3 +208,73 @@ Vérifications faites avant l'envoi, avec le code de ServMask et non le mien :
 
 `paquet.py` écrit désormais `package.json` en tête et relit l'archive pour le
 vérifier ; le contrôle a été essayé sur la 1.0.0, où il échoue bien.
+
+## 1.0.2 — livraison au format UpdraftPlus (Kinsta interdit All-in-One WP Migration)
+
+L'archive 1.0.1 était valide et acceptée par le plugin. Elle ne pouvait
+pourtant pas servir sur ce site-là : l'hébergement est **Kinsta**, et Kinsta
+**bloque l'installation** de `all-in-one-wp-migration`. Le plugin figure dans
+sa liste d'extensions interdites, et la documentation est explicite : « If you
+try to install a banned plugin, you will receive a warning message, and the
+installation will be blocked. » UpdraftPlus, lui, n'y figure pas — l'entrée
+`updraft` de cette liste est une autre extension, ce que Kinsta précise
+lui-même.
+
+`updraft.py` fabrique donc le même contenu au format UpdraftPlus : un
+`…-db.gz` et un `…-themes.zip` partageant la même empreinte de 12
+hexadécimaux, ce qui les regroupe en un seul jeu de sauvegarde.
+
+Trois règles viennent du code d'UpdraftPlus, pas d'une supposition :
+
+1. **le nom du fichier** — `admin.php` refuse tout ce qui ne correspond pas à
+   `/^backup_([\-0-9]{15})_.*_([0-9a-f]{12})-([\-a-z]+)…/i` avec un
+   « Bad filename format » ;
+2. **l'adresse du site**, lue dans l'en-tête du dump par `analyse_db_file()`.
+   Si elle diffère de celle du site d'arrivée, UpdraftPlus annonce une
+   migration et répond « You need the Migrator add-on » : la version gratuite
+   ne réécrit pas les adresses. Le dump est donc écrit directement à l'adresse
+   de destination, et il n'y a rien à migrer ;
+3. **les noms de table**, repérés par
+   `preg_match('/^\s*create table \`?([^\`\(]*)\`?\s*\(/i', …)`. La capture est
+   gourmande : sans accents graves, elle emporte l'espace qui précède la
+   parenthèse. `wp_get_db_schema()` écrit `CREATE TABLE wp_users (` — le nom lu
+   devenait `wp_users ` et le client aurait vu « This database backup is
+   missing core WordPress tables: users, options, posts… » sur une sauvegarde
+   pourtant complète. `dump.php` pose désormais les accents graves.
+
+Vérifications faites avec le code d'UpdraftPlus, sur un vrai WordPress branché
+à un vrai MySQL :
+
+- `analyse_db_file()` exécutée telle quelle sur le fichier livré :
+  **0 avertissement, 0 erreur**, « Backup of: https://equilibriumcircle.com »,
+  et les 12 tables reconnues ;
+- deux témoins positifs, pour prouver que ce contrôle sait échouer : une copie
+  dont l'adresse a été changée déclenche « This looks like a migration », une
+  copie sans accents graves déclenche « missing core WordPress tables » ;
+- la porte d'entrée sur le nom, exécutée elle aussi : les deux fichiers
+  acceptés et regroupés en un jeu, trois noms fautifs refusés.
+
+Deux corrections de fond dans le dump :
+
+- **les transitoires ne sont plus exportés.** `_site_transient_update_plugins`
+  décrivait les extensions du poste de développement — dont le pilote SQLite,
+  qui n'a rien à faire chez un hébergeur en MySQL. WordPress les recrée seul ;
+- **le compte administrateur est celui du client** (`compte.php`). Une
+  restauration remplace la table des utilisateurs : sans cela, le client se
+  retrouve devant un site correct dont il n'a plus la clé. Un second compte
+  administrateur est fourni en secours, parce qu'un mot de passe transmis dans
+  une conversation ne dit pas toujours où il s'arrête, et que sur une
+  installation neuve la procédure « mot de passe oublié » passe par un courriel
+  qui n'est pas encore configuré.
+
+`adresse.py` porte le remplacement d'adresse, partagé par `restaure.py` et
+`updraft.py`. Il ne cherche plus la fin d'une chaîne sérialisée avec une
+expression régulière : il **compte les octets**, comme PHP. L'ancien motif
+s'arrêtait au premier `\"` interne et lisait 28 caractères là où la valeur en
+faisait 154 — si l'adresse s'était trouvée dans ces 28 caractères, la
+« correction » de longueur aurait écrit `s:28` sur une chaîne de 154 octets et
+cassé l'option en silence. `python3 adresse.py` rejoue le cas, avec un témoin
+qui prouve que la vérification échoue quand une longueur est fausse.
+
+Le jeu de sauvegarde lui-même n'est pas publié ici : il contient la table des
+utilisateurs.

@@ -19,10 +19,11 @@ La comparaison visuelle tourne ensuite contre CE site-la.
 Usage : restaure.py <archive.wpress> <dossier-de-travail> <ancienne-url> <nouvelle-url>
 """
 import os
-import re
 import shutil
 import subprocess
 import sys
+
+import adresse
 
 HDR = 4377
 
@@ -104,39 +105,19 @@ def main():
     print("--- remplacement de l'adresse ---")
     with open(sql, encoding="utf-8") as f:
         texte = f.read()
-    # Une URL enfermee dans une chaine PHP serialisee porte sa longueur : la
-    # remplacer sans corriger la longueur casserait la valeur.
-    #
-    # DANS UN DUMP SQL, les guillemets de la serialisation sont ECHAPPES :
-    # s:11:\"une valeur\". Un motif ecrit avec des guillemets nus n'y trouve
-    # jamais rien et rend « 0 chaine concernee », c'est-a-dire exactement ce
-    # que rend un fichier sain. On accepte donc les deux formes, et on affiche
-    # le DENOMINATEUR — le nombre total de chaines serialisees trouvees — sans
-    # lequel un zero ne prouve rien.
-    # Deux ecritures possibles, traitees separement : le guillemet echappe du
-    # dump SQL, et le guillemet nu si le fichier a ete desechappe en amont.
-    FORMES = ((r's:(\d+):\\"([^\\]*?)\\"', '\\"'),   # s:11:\"...\"
-              (r's:(\d+):"([^"]*?)"',      '"'))     # s:11:"..."
-    total = sum(len(re.findall(m, texte)) for m, _ in FORMES)
-    concernees = sum(1 for m, _ in FORMES
-                     for _n, v in re.findall(m, texte) if ancienne in v)
-    print("  chaines serialisees : %d au total, %d contiennent l'adresse"
+    texte, total, concernees, occurrences = adresse.remplace(texte, ancienne, nouvelle)
+    print("  chaines serialisees : %d lues, %d contiennent l'adresse"
           % (total, concernees))
-
-    occurrences = texte.count(ancienne)
-    texte = texte.replace(ancienne, nouvelle)
-
-    # La longueur declaree doit suivre le remplacement, sinon PHP refuse de
-    # deserialiser la valeur et l'option devient silencieusement vide.
-    for motif, guillemet in FORMES:
-        texte = re.sub(
-            motif,
-            lambda m, g=guillemet: (m.group(0) if nouvelle not in m.group(2)
-                                    else 's:%d:%s%s%s' % (len(m.group(2)), g, m.group(2), g)),
-            texte)
+    verifiees, fausses = adresse.longueurs_coherentes(texte)
+    if fausses:
+        print("  ECHEC : %d longueurs serialisees fausses sur %d relues"
+              % (fausses, verifiees))
+        return 1
+    print("  longueurs serialisees relues : %d justes sur %d" % (verifiees, verifiees))
     with open(sql, "w", encoding="utf-8") as f:
         f.write(texte)
     print("  %d occurrences remplacees" % occurrences)
+
 
     print("--- import dans MySQL ---")
     for commande in (

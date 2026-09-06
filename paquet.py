@@ -29,7 +29,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 WP = os.path.join(ICI, "wp")
 PAQUET = os.path.join(ICI, "paquet")
 THEME = os.path.join(WP, "wp-content", "themes", "equilibrium")
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 ARCHIVE = os.path.join(ICI, "equilibrium-%s.wpress" % VERSION)
 URL_DEV = "http://127.0.0.1:8881"
 

@@ -48,6 +48,17 @@ foreach ( preg_split( '/;\s*[\r\n]+/', $schema ) as $bout ) {
 	$bout = trim( $bout );
 	if ( '' === $bout || 0 !== stripos( $bout, 'CREATE TABLE' ) ) { continue; }
 	if ( ! preg_match( '/CREATE TABLE\s+`?([A-Za-z0-9_]+)`?/i', $bout, $m ) ) { continue; }
+	/* Le nom de table entre accents graves, et colle a la parenthese.
+	   wp_get_db_schema() ecrit « CREATE TABLE wp_users ( ». UpdraftPlus lit le
+	   fichier avec :
+	       preg_match('/^\s*create table \`?([^\`\(]*)\`?\s*\(/i', ...)
+	   Sans accent grave, la capture gourmande emporte l'espace : le nom
+	   devient « wp_users », espace compris, il ne correspond plus a la liste
+	   des tables attendues, et le client voit « This database backup is
+	   missing core WordPress tables: users, options, posts... » sur une
+	   sauvegarde pourtant complete. */
+	$bout = preg_replace( '/^CREATE TABLE\s+`?([A-Za-z0-9_]+)`?\s*\(/i',
+		'CREATE TABLE `$1` (', $bout, 1 );
 	/* Si le pilote ne rend pas de jeu de caracteres, la table prendrait celui
 	   du serveur du client, qui peut etre latin1 : on l'ecrit toujours. */
 	if ( false === stripos( $bout, 'CHARACTER SET' ) ) {
@@ -63,10 +74,34 @@ $lignes[] = "SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';";
 $lignes[] = "SET NAMES utf8mb4;";
 $lignes[] = "";
 
+/**
+ * Les transitoires sont des CACHES, jamais des donnees.
+ *
+ * Deux raisons de ne pas les emporter. La premiere est qu'ils decrivent le
+ * site de developpement et pas celui du client : _site_transient_update_plugins
+ * contient le resultat de la derniere verification des mises a jour, donc le
+ * nom des extensions d'ici — dont le pilote SQLite, qui n'a rien a faire chez
+ * un client en MySQL. La seconde est qu'ils sont datés : livres tels quels,
+ * ils font croire au site d'arrivee qu'une verification vient d'avoir lieu.
+ *
+ * WordPress les recreera tout seul a la premiere page.
+ */
+function eq_est_transitoire( $table, $row ) {
+	if ( 'wp_options' !== $table ) { return false; }
+	$nom = $row['option_name'];
+	return 0 === strpos( $nom, '_transient_' ) || 0 === strpos( $nom, '_site_transient_' );
+}
+
 $total = 0;
+$ignorees = 0;
 foreach ( $creations as $table => $creation ) {
 	$rows = $wpdb->get_results( "SELECT * FROM `$table`", ARRAY_A );
 	if ( null === $rows ) { $rows = array(); }
+	$avant = count( $rows );
+	$rows = array_values( array_filter( $rows, function ( $row ) use ( $table ) {
+		return ! eq_est_transitoire( $table, $row );
+	} ) );
+	$ignorees += $avant - count( $rows );
 
 	$lignes[] = "DROP TABLE IF EXISTS `$table`;";
 	$lignes[] = $creation . ';';
@@ -87,5 +122,5 @@ foreach ( $creations as $table => $creation ) {
 }
 
 file_put_contents( $sortie, implode( "\n", $lignes ) . "\n" );
-fwrite( STDOUT, sprintf( "\n%d tables, %d lignes -> %s (%d octets)\n",
-	count( $creations ), $total, $sortie, filesize( $sortie ) ) );
+fwrite( STDOUT, sprintf( "\n%d tables, %d lignes (%d transitoires ecartes) -> %s (%d octets)\n",
+	count( $creations ), $total, $ignorees, $sortie, filesize( $sortie ) ) );
