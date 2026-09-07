@@ -278,3 +278,74 @@ qui prouve que la vérification échoue quand une longueur est fausse.
 
 Le jeu de sauvegarde lui-même n'est pas publié ici : il contient la table des
 utilisateurs.
+
+---
+
+## 1.1.0 — la page « Support », et l'adresse qui n'y est pas encore
+
+Le site a une dixième page, `/support/`, et le menu huit entrées au lieu de
+sept. Elle répond à une demande précise : pouvoir accepter un soutien
+**avant** le lancement, alors que le mouvement n'a encore ni forme juridique,
+ni pays, ni compte.
+
+### Ce que la page dit, et pourquoi dans cet ordre
+
+C'est la seule page du site où une erreur d'affichage coûte de l'argent à un
+tiers, et de manière irréversible. Elle est donc écrite à l'envers des pages
+de dons habituelles : **ce qu'on ne peut pas promettre est affiché avant le
+moyen de payer.** L'encadré d'avertissement — irréversibilité du paiement,
+absence de forme juridique, réglementation du financement politique, aucune
+donnée collectée — précède le cadre de l'adresse, et un contrôle automatique
+vérifie que cet ordre tient dans la page rendue.
+
+Comme partout ailleurs sur ce site : aucun montant suggéré, aucun objectif,
+aucun budget, aucun total déjà reçu, aucun donateur. Six questions qu'un
+donateur est en droit de poser sont affichées avec leur vraie réponse
+d'aujourd'hui, « To be decided ».
+
+### L'adresse : un seul endroit, et il est vide
+
+L'adresse du portefeuille **n'est pas écrite dans le contenu de la page**.
+La page porte un emplacement délimité par deux commentaires HTML,
+`<!--EQ_BTC-->` … `<!--/EQ_BTC-->`, et le thème remplace ce qui se trouve
+entre les deux, au rendu, par la valeur de l'option `eq_adresse_btc`.
+
+Écrite dans la page, l'adresse serait recopiée dans les révisions, dans toute
+sauvegarde et dans toute exportation. Le jour où elle change, il faudrait la
+corriger à plusieurs endroits — et une adresse de portefeuille corrigée à
+moitié envoie l'argent chez un inconnu, sans recours. Une option, c'est un
+endroit et un seul.
+
+```sh
+wp option update eq_adresse_btc '<adresse>'   # la poser
+wp option delete eq_adresse_btc               # la retirer
+```
+
+L'option **n'existe pas** sur le site en ligne, et c'est voulu. Tant qu'elle
+est absente ou refusée, la page affiche la pastille « To be decided » et ne
+peut recevoir aucun paiement. Une valeur qui n'est pas strictement
+alphanumérique (25 à 64 caractères) est **refusée** plutôt que nettoyée : une
+adresse nettoyée reste une adresse d'apparence valide, mais ce n'est plus la
+bonne, et rien à l'écran ne le dirait.
+
+### Les contrôles ajoutés
+
+La suite de vérification passe de 1354 à 1498 contrôles, tous au vert. La
+page de soutien entre dans **tous** les contrôles communs — quatorze largeurs,
+aucune requête sortante, aucun fait inventé, aucun État nommé, contraste,
+ancres sous l'en-tête collant — et en reçoit de nouveaux qui lui sont propres.
+
+Les contrôles sur l'adresse ont deux branches, et la branche inactive est
+écrite plutôt que sautée en silence :
+
+* option vide — l'état d'aujourd'hui : la page affiche la pastille, et
+  **aucune chaîne ressemblant à une adresse de portefeuille** n'apparaît nulle
+  part dans le texte rendu ;
+* option posée : l'adresse rendue est comparée **caractère par caractère** à
+  la source, elle ne doit apparaître qu'**une fois** sur la page, et sur
+  **aucune** des neuf autres.
+
+Contrôle positif effectué : avec une adresse posée, la suite compte 1507
+contrôles (les neuf de la seconde branche) ; en modifiant **un seul
+caractère** de l'adresse rendue, elle tombe à 2 échecs nommés. Un contrôle
+dont on n'a pas vu l'échec ne prouve rien.

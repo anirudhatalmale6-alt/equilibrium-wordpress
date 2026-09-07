@@ -41,6 +41,7 @@ PAGES = [
     ("principles.html",  "principles",  "Principles",      "Principles",    "principles"),
     ("movement.html",    "movement",    "The movement",    "The movement",  "movement"),
     ("join.html",        "join",        "Join",            "Join",          "join"),
+    ("support.html",     "support",     "Support",         "Support",       "support"),
     ("services.html",    "services",    "Services",        "Services",      "services"),
     ("lobbying.html",    "lobbying",    "Lobbying",        "Lobbying",      "lobbying"),
     ("circle.html",      "circle",      "Circle",          "Circle",        "circle"),
@@ -48,7 +49,7 @@ PAGES = [
     ("portal-area.html", "portal-area", "Member area",     "Member area",   "circle"),
 ]
 
-# Le menu principal du site statique : sept entrees, dont la premiere est une
+# Le menu principal du site statique : huit entrees, dont la premiere est une
 # ancre vers l'accueil et non une page. Le separateur visuel se place AVANT
 # « Services » — c'est la ou le site statique le met, et c'est ce qui separe
 # le mouvement de la pratique.
@@ -57,11 +58,12 @@ MENU_PRINCIPAL = [
     {"cle": "principles", "ancre": "",           "page": "principles","sep": False},
     {"cle": "movement",   "ancre": "",           "page": "movement",  "sep": False},
     {"cle": "join",       "ancre": "",           "page": "join",      "sep": False},
+    {"cle": "support",    "ancre": "",           "page": "support",   "sep": False},
     {"cle": "services",   "ancre": "",           "page": "services",  "sep": True},
     {"cle": "lobbying",   "ancre": "",           "page": "lobbying",  "sep": False},
     {"cle": "circle",     "ancre": "",           "page": "circle",    "sep": False},
 ]
-# Le pied reprend les memes sept entrees, sans separateur.
+# Le pied reprend les memes huit entrees, sans separateur.
 MENU_PIED = [dict(e, sep=False) for e in MENU_PRINCIPAL]
 
 # Les pages qui n'apparaissent dans aucun menu : la porte du portail est un
@@ -197,7 +199,7 @@ def tete_de(fichier):
 STYLE_CSS = """/*
 Theme Name: Equilibrium
 Description: Theme du site Equilibrium (mouvement, pratique et Cercle). Aucune ressource exterieure : la feuille de style et les visuels sont servis par le theme lui-meme. Aucun script.
-Version: 1.0.0
+Version: 1.1.0
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -221,7 +223,7 @@ FUNCTIONS_PHP = r"""<?php
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'EQ_VERSION', '1.0.0' );
+define( 'EQ_VERSION', '1.1.0' );
 
 /* ------------------------------------------------------------------ socle */
 
@@ -295,6 +297,58 @@ add_action( 'wp', function () {
 		remove_filter( 'the_content', 'wptexturize' );
 	}
 } );
+
+/* ------------------------------------------------------- adresse de don */
+
+/**
+ * L'adresse du portefeuille, et l'UNIQUE endroit ou elle est ecrite.
+ *
+ * Le contenu de la page de soutien porte un emplacement marque par deux
+ * commentaires HTML, <!--EQ_BTC--> ... <!--/EQ_BTC-->. Ce qui se trouve entre
+ * les deux est remplace ici, au rendu, par la valeur de l'option
+ * `eq_adresse_btc`.
+ *
+ * Pourquoi pas l'adresse ecrite directement dans la page : elle serait alors
+ * dans le contenu d'un article, c'est-a-dire recopiee dans les revisions,
+ * dans toute sauvegarde et dans toute exportation. Le jour ou elle change, il
+ * faudrait la corriger a plusieurs endroits — et une adresse de portefeuille
+ * corrigee a moitie envoie l'argent chez un inconnu, de maniere irreversible.
+ * Une option, c'est un endroit, et un seul.
+ *
+ * Tant que l'option est vide — c'est son etat de depart — la page affiche la
+ * meme pastille « To be decided » que partout ailleurs sur ce site, et ne
+ * peut recevoir aucun paiement.
+ *
+ *   la poser   : wp option update eq_adresse_btc '<adresse>'
+ *   la retirer : wp option delete eq_adresse_btc
+ */
+function eq_adresse_btc() {
+	$v = trim( (string) get_option( 'eq_adresse_btc', '' ) );
+	/* Une adresse ne contient que des caracteres alphanumeriques, en base58
+	   ou en bech32. Tout le reste est soit une faute de frappe, soit une
+	   injection. On REFUSE au lieu de nettoyer : une adresse nettoyee reste
+	   une adresse d'apparence valide, mais ce n'est plus la bonne, et rien a
+	   l'ecran ne le dirait. */
+	if ( '' === $v || ! preg_match( '/\A[a-zA-Z0-9]{25,64}\z/', $v ) ) { return ''; }
+	return $v;
+}
+
+function eq_pose_adresse( $contenu ) {
+	if ( false === strpos( $contenu, '<!--EQ_BTC-->' ) ) { return $contenu; }
+	$adresse = eq_adresse_btc();
+	$dedans  = $adresse
+		? '<span class="adr">' . esc_html( $adresse ) . '</span>'
+		: '<span class="tbd">To be decided</span>';
+	/* Remplacement par CALLBACK et non par chaine : dans une chaine de
+	   remplacement, preg_replace interprete $1 et les antislashs. Une adresse
+	   n'en contient pas aujourd'hui, mais le jour ou l'option contiendrait
+	   autre chose, l'erreur serait silencieuse et porterait sur l'adresse. */
+	return preg_replace_callback(
+		'/<!--EQ_BTC-->.*?<!--\/EQ_BTC-->/s',
+		function () use ( $dedans ) { return '<!--EQ_BTC-->' . $dedans . '<!--/EQ_BTC-->'; },
+		$contenu );
+}
+add_filter( 'the_content', 'eq_pose_adresse', 20 );
 
 /* ------------------------------------------------------------ navigation */
 

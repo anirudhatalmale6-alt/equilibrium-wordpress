@@ -10,7 +10,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'EQ_VERSION', '1.0.0' );
+define( 'EQ_VERSION', '1.1.0' );
 
 /* ------------------------------------------------------------------ socle */
 
@@ -84,6 +84,58 @@ add_action( 'wp', function () {
 		remove_filter( 'the_content', 'wptexturize' );
 	}
 } );
+
+/* ------------------------------------------------------- adresse de don */
+
+/**
+ * L'adresse du portefeuille, et l'UNIQUE endroit ou elle est ecrite.
+ *
+ * Le contenu de la page de soutien porte un emplacement marque par deux
+ * commentaires HTML, <!--EQ_BTC--> ... <!--/EQ_BTC-->. Ce qui se trouve entre
+ * les deux est remplace ici, au rendu, par la valeur de l'option
+ * `eq_adresse_btc`.
+ *
+ * Pourquoi pas l'adresse ecrite directement dans la page : elle serait alors
+ * dans le contenu d'un article, c'est-a-dire recopiee dans les revisions,
+ * dans toute sauvegarde et dans toute exportation. Le jour ou elle change, il
+ * faudrait la corriger a plusieurs endroits — et une adresse de portefeuille
+ * corrigee a moitie envoie l'argent chez un inconnu, de maniere irreversible.
+ * Une option, c'est un endroit, et un seul.
+ *
+ * Tant que l'option est vide — c'est son etat de depart — la page affiche la
+ * meme pastille « To be decided » que partout ailleurs sur ce site, et ne
+ * peut recevoir aucun paiement.
+ *
+ *   la poser   : wp option update eq_adresse_btc '<adresse>'
+ *   la retirer : wp option delete eq_adresse_btc
+ */
+function eq_adresse_btc() {
+	$v = trim( (string) get_option( 'eq_adresse_btc', '' ) );
+	/* Une adresse ne contient que des caracteres alphanumeriques, en base58
+	   ou en bech32. Tout le reste est soit une faute de frappe, soit une
+	   injection. On REFUSE au lieu de nettoyer : une adresse nettoyee reste
+	   une adresse d'apparence valide, mais ce n'est plus la bonne, et rien a
+	   l'ecran ne le dirait. */
+	if ( '' === $v || ! preg_match( '/\A[a-zA-Z0-9]{25,64}\z/', $v ) ) { return ''; }
+	return $v;
+}
+
+function eq_pose_adresse( $contenu ) {
+	if ( false === strpos( $contenu, '<!--EQ_BTC-->' ) ) { return $contenu; }
+	$adresse = eq_adresse_btc();
+	$dedans  = $adresse
+		? '<span class="adr">' . esc_html( $adresse ) . '</span>'
+		: '<span class="tbd">To be decided</span>';
+	/* Remplacement par CALLBACK et non par chaine : dans une chaine de
+	   remplacement, preg_replace interprete $1 et les antislashs. Une adresse
+	   n'en contient pas aujourd'hui, mais le jour ou l'option contiendrait
+	   autre chose, l'erreur serait silencieuse et porterait sur l'adresse. */
+	return preg_replace_callback(
+		'/<!--EQ_BTC-->.*?<!--\/EQ_BTC-->/s',
+		function () use ( $dedans ) { return '<!--EQ_BTC-->' . $dedans . '<!--/EQ_BTC-->'; },
+		$contenu );
+}
+add_filter( 'the_content', 'eq_pose_adresse', 20 );
 
 /* ------------------------------------------------------------ navigation */
 
